@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Medical Records</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#eef3f5; --surface:#ffffff; --ink:#14232b; --muted:#566b75; --line:#d3dde2;
+  --accent:#0b6e7f; --accent-ink:#ffffff; --danger:#b3261e;
+  --t-visit:#0b6e7f; --t-lab:#6b4fa3; --t-rx:#2f7d4f; --t-vax:#b0630f; --t-img:#3a5fa8; --t-other:#5f6b72;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1a1f; --surface:#17252c; --ink:#e6eef1; --muted:#93a8b1; --line:#2a3b44;
+    --accent:#4fc3d6; --accent-ink:#06222a; --danger:#ff8a80;
+    --t-visit:#4fc3d6; --t-lab:#b79cf0; --t-rx:#6fd29a; --t-vax:#f0b05c; --t-img:#8fb0f0; --t-other:#a5b4bb;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1a1f; --surface:#17252c; --ink:#e6eef1; --muted:#93a8b1; --line:#2a3b44;
+  --accent:#4fc3d6; --accent-ink:#06222a; --danger:#ff8a80;
+  --t-visit:#4fc3d6; --t-lab:#b79cf0; --t-rx:#6fd29a; --t-vax:#f0b05c; --t-img:#8fb0f0; --t-other:#a5b4bb;
+  color-scheme:dark;
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:1.75rem;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 20px;max-width:60ch}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar input{flex:1 1 200px;width:auto}
+.bar select{flex:0 0 auto;width:auto}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:10px 14px;border-radius:8px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+button.danger{color:var(--danger)}
+button.small{padding:6px 10px;font-size:.875rem}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.count{color:var(--muted);font-size:.875rem;margin:0 0 8px}
+.rec{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c,var(--t-other));border-radius:8px;margin-bottom:10px}
+.rec summary{list-style:none;cursor:pointer;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+.rec summary::-webkit-details-marker{display:none}
+.rec .t{font-weight:600}
+.rec .d{color:var(--muted);font-size:.875rem;text-align:right}
+.rec .m{grid-column:1/-1;color:var(--muted);font-size:.875rem}
+.rec .m b{color:var(--c);font-weight:600}
+.body{padding:0 14px 14px;border-top:1px solid var(--line)}
+.body p{white-space:pre-wrap;margin:12px 0}
+.body .row{display:flex;gap:8px;flex-wrap:wrap}
+.body img{max-width:100%;border-radius:6px;border:1px solid var(--line);margin-bottom:10px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
+dialog{width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 12px;font-size:1.25rem}
+label{display:block;font-size:.875rem;font-weight:500;margin:12px 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.note{font-size:.8125rem;color:var(--muted);margin-top:4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (max-width:480px){.two{grid-template-columns:1fr}}
+@media print{.bar,.tools,.actions,.body .row,.toast{display:none}.rec{break-inside:avoid}body{background:#fff}}
+</style>
+</head>
+<body>
+<main>
+  <h1>My medical records</h1>
+  <p class="sub">Keep visits, lab results, prescriptions and vaccinations in one place. Records stay in this browser on this device; nothing is uploaded.</p>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Search title, doctor or notes" aria-label="Search records">
+    <select id="ft" aria-label="Filter by type"></select>
+    <button class="primary" id="add">Add record</button>
+  </div>
+  <div class="tools">
+    <button class="small" id="exp">Export backup</button>
+    <button class="small" id="imp">Import backup</button>
+    <button class="small" id="prt">Print</button>
+    <input type="file" id="impf" accept="application/json" hidden>
+  </div>
+  <p class="count" id="count" aria-live="polite"></p>
+  <div id="list"></div>
+</main>
+
+<dialog id="dlg">
+  <h2 id="dt">Add record</h2>
+  <label for="f-title">Title</label>
+  <input id="f-title" placeholder="e.g. Annual blood test" maxlength="120">
+  <div class="two">
+    <div><label for="f-type">Type</label><select id="f-type"></select></div>
+    <div><label for="f-date">Date</label><input id="f-date" type="date"></div>
+  </div>
+  <label for="f-prov">Doctor or clinic</label>
+  <input id="f-prov" maxlength="120">
+  <label for="f-notes">Notes</label>
+  <textarea id="f-notes" rows="4" placeholder="Results, diagnosis, dosage, follow-up"></textarea>
+  <label for="f-file">Attach a photo or PDF (optional)</label>
+  <input id="f-file" type="file" accept="image/*,application/pdf">
+  <div class="note" id="f-fnote">Files up to 800 KB are saved with the record.</div>
+  <div class="actions">
+    <button id="cancel">Cancel</button>
+    <button class="primary" id="save">Save record</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  var KEY="medical-records-v1";
+  var TYPES=[["visit","Doctor visit","--t-visit"],["lab","Lab result","--t-lab"],["rx","Prescription","--t-rx"],["vax","Vaccination","--t-vax"],["img","Imaging","--t-img"],["other","Other","--t-other"]];
+  var records=[],editing=null,fileData=null;
+  var $=function(id){return document.getElementById(id)};
+
+  function load(){try{var r=localStorage.getItem(KEY);records=r?JSON.parse(r):[]}catch(e){records=[]}}
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(records));return true}catch(e){toast("Could not save. Browser storage may be full or blocked.");return false}}
+  function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2600)}
+  function typeInfo(k){return TYPES.filter(function(t){return t[0]===k})[0]||TYPES[5]}
+  function esc(s){return String(s||"").replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function fmt(d){if(!d)return"No date";var p=d.split("-");var dt=new Date(+p[0],p[1]-1,+p[2]);return dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
+
+  function fillSelects(){
+    $("ft").innerHTML='<option value="">All types</option>'+TYPES.map(function(t){return'<option value="'+t[0]+'">'+t[1]+'</option>'}).join("");
+    $("f-type").innerHTML=TYPES.map(function(t){return'<option value="'+t[0]+'">'+t[1]+'</option>'}).join("");
+  }
+
+  function render(){
+    var q=$("q").value.trim().toLowerCase(),ft=$("ft").value;
+    var rows=records.filter(function(r){
+      if(ft&&r.type!==ft)return false;
+      return !q||[r.title,r.provider,r.notes].join(" ").toLowerCase().indexOf(q)>-1;
+    }).sort(function(a,b){return(b.date||"").localeCompare(a.date||"")});
+    $("count").textContent=records.length?rows.length+" of "+records.length+" records":"";
+    if(!rows.length){
+      $("list").innerHTML='<div class="empty">'+(records.length?"No records match your search.":"No records yet. Select Add record to save your first one.")+"</div>";
+      return;
+    }
+    $("list").innerHTML=rows.map(function(r){
+      var t=typeInfo(r.type);
+      var file="";
+      if(r.file){
+        file=r.file.data.indexOf("data:image")===0
+          ?'<img src="'+r.file.data+'" alt="Attachment for '+esc(r.title)+'">'
+          :"";
+        file+='<div class="row"><a href="'+r.file.data+'" download="'+esc(r.file.name)+'"><button class="small" type="button">Download '+esc(r.file.name)+'</button></a></div>';
+      }
+      return'<details class="rec" style="--c:var('+t[2]+')"><summary><span class="t">'+esc(r.title)+'</span><span class="d">'+fmt(r.date)+'</span><span class="m"><b>'+t[1]+'</b>'+(r.provider?" with "+esc(r.provider):"")+'</span></summary><div class="body">'
+        +(r.notes?"<p>"+esc(r.notes)+"</p>":'<p class="note">No notes.</p>')+file
+        +'<div class="row" style="margin-top:8px"><button class="small" data-edit="'+r.id+'">Edit</button><button class="small danger" data-del="'+r.id+'">Delete</button></div></div></details>';
+    }).join("");
+  }
+
+  function openForm(id){
+    editing=id||null;fileData=null;
+    var r=records.filter(function(x){return x.id===id})[0]||{};
+    $("dt").textContent=id?"Edit record":"Add record";
+    $("f-title").value=r.title||"";
+    $("f-type").value=r.type||"visit";
+    $("f-date").value=r.date||new Date().toISOString().slice(0,10);
+    $("f-prov").value=r.provider||"";
+    $("f-notes").value=r.notes||"";
+    $("f-file").value="";
+    fileData=r.file||null;
+    $("f-fnote").textContent=fileData?"Current file: "+fileData.name+". Choose another to replace it.":"Files up to 800 KB are saved with the record.";
+    $("dlg").showModal();
+    $("f-title").focus();
+  }
+
+  $("add").onclick=function(){openForm()};
+  $("cancel").onclick=function(){$("dlg").close()};
+  $("q").oninput=render;$("ft").onchange=render;
+
+  $("f-file").onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    if(f.size>800*1024){toast("That file is over 800 KB. Choose a smaller one.");e.target.value="";return}
+    var rd=new FileReader();
+    rd.onload=function(){fileData={name:f.name,data:rd.result};$("f-fnote").textContent="Ready to save: "+f.name};
+    rd.readAsDataURL(f);
+  };
+
+  $("save").onclick=function(){
+    var title=$("f-title").value.trim();
+    if(!title){toast("Enter a title for this record.");$("f-title").focus();return}
+    var rec={id:editing||String(Date.now()),title:title,type:$("f-type").value,date:$("f-date").value,provider:$("f-prov").value.trim(),notes:$("f-notes").value.trim(),file:fileData};
+    var prev=records.slice();
+    if(editing){records=records.map(function(r){return r.id===editing?rec:r})}else{records.push(rec)}
+    if(persist()){$("dlg").close();render();toast("Record saved")}else{records=prev}
+  };
+
+  $("list").onclick=function(e){
+    var b=e.target.closest("button");if(!b)return;
+    if(b.dataset.edit)openForm(b.dataset.edit);
+    if(b.dataset.del){
+      if(b.dataset.armed){records=records.filter(function(r){return r.id!==b.dataset.del});persist();render();toast("Record deleted")}
+      else{b.dataset.armed="1";b.textContent="Confirm delete";setTimeout(function(){b.dataset.armed="";b.textContent="Delete"},3000)}
+    }
+  };
+
+  $("exp").onclick=function(){
+    if(!records.length){toast("Nothing to export yet.");return}
+    var blob=new Blob([JSON.stringify(records,null,2)],{type:"application/json"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="medical-records-backup.json";
+    document.body.appendChild(a);a.click();a.remove();
+    toast("Backup downloaded");
+  };
+  $("imp").onclick=function(){$("impf").click()};
+  $("impf").onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var data=JSON.parse(rd.result);if(!Array.isArray(data))throw 0;
+        var ids={};records.forEach(function(r){ids[r.id]=1});
+        var added=0;data.forEach(function(r){if(r&&r.title&&!ids[r.id]){records.push(r);added++}});
+        persist();render();toast(added+" records imported");
+      }catch(err){toast("That file is not a valid backup.")}
+      e.target.value="";
+    };
+    rd.readAsText(f);
+  };
+  $("prt").onclick=function(){
+    document.querySelectorAll("details.rec").forEach(function(d){d.open=true});
+    window.print();
+  };
+
+  fillSelects();load();render();
+})();
+</script>
+</body>
+</html>
